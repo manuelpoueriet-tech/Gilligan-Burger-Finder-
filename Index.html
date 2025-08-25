@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gilligan Burgers • Burger Finder</title>
+<meta name="description" content="¿Cuál burger pide tu antojo hoy? Responde 6 preguntas y te recomendamos tu combinación perfecta de Gilligan Burgers.">
+<style>
+  :root{
+    --brand-red:#E41E26; --brand-white:#fff; --ink:#111; --muted:#777; --bg:#fafafa; --chip:#f3f3f3; --chip-on:#ffe9ea; --ok:#0e9f6e;
+    --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{position:sticky;top:0;background:var(--brand-white);border-bottom:1px solid #eee;z-index:3}
+  .bar{display:flex;align-items:center;gap:12px;max-width:960px;margin:0 auto;padding:10px 16px}
+  .logo{width:40px;height:40px;border-radius:50%;background:var(--brand-red);display:grid;place-items:center;color:#fff;font-weight:800}
+  .brand{font-weight:800;letter-spacing:.2px}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 80px}
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  h1{margin:.2rem 0 1rem;font-size:1.6rem}
+  .progress{height:8px;background:#eee;border-radius:99px;overflow:hidden;margin:6px 0 16px}
+  .progress>i{display:block;height:100%;background:var(--brand-red);width:0%}
+  .q{display:none;animation:fade .2s ease}
+  .q.active{display:block}
+  @keyframes fade{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .chips{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{border:1px solid #ddd;background:var(--chip);padding:10px 12px;border-radius:999px;cursor:pointer;font-weight:600}
+  .chip.on{background:var(--chip-on);border-color:var(--brand-red);color:var(--ink)}
+  .hint{color:var(--muted);font-size:.92rem;margin-top:8px}
+  .row{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:780px){.row{grid-template-columns:1fr 1fr}}
+  .controls{display:flex;justify-content:space-between;margin-top:14px;gap:10px}
+  button{appearance:none;border:0;background:var(--brand-red);color:#fff;font-weight:700;padding:12px 16px;border-radius:12px;cursor:pointer}
+  button.ghost{background:#fff;color:var(--ink);border:1px solid #ddd}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .results .item{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;border:1px solid #eee;border-radius:12px;padding:10px}
+  .results img{width:96px;height:96px;object-fit:cover;border-radius:10px;background:#f5f5f5}
+  .tag{display:inline-block;font-size:.78rem;padding:4px 8px;border-radius:999px;border:1px solid #eee;margin-right:6px;margin-top:6px}
+  .price{font-weight:800}
+  .score{font-size:.85rem;color:var(--muted)}
+  .cta{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid #eee;background:#fff;text-decoration:none;color:var(--ink);font-weight:700}
+  .ok{color:var(--ok)}
+  footer{max-width:960px;margin:40px auto 16px;padding:0 16px;color:#999;font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">GB</div>
+    <div class="brand">Gilligan Burgers • Burger Finder</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="card">
+    <h1>¿Cuál burger pide tu antojo hoy?</h1>
+    <div class="progress"><i id="prog"></i></div>
+
+    <!-- PREGUNTAS -->
+    <form id="quiz">
+      <!-- Q1 Intensidad de hambre -->
+      <section class="q active" data-q="hunger">
+        <h3>1) ¿Qué tan hambrad@ estás?</h3>
+        <div class="chips" data-type="single">
+          <span class="chip" data-value="ligero">Tranqui</span>
+          <span class="chip" data-value="medio">Normal</span>
+          <span class="chip" data-value="alto">Vengo con todo</span>
+        </div>
+        <p class="hint">Esto ayuda a definir tamaño (single, doble, XL o combo).</p>
+      </section>
+
+      <!-- Q2 Proteína -->
+      <section class="q" data-q="protein">
+        <h3>2) ¿Carne o pollo?</h3>
+        <div class="chips" data-type="single">
+          <span class="chip" data-value="res">Res</span>
+          <span class="chip" data-value="pollo">Pollo</span>
+          <span class="chip" data-value="mixto">Me da igual</span>
+        </div>
+      </section>
+
+      <!-- Q3 Picante -->
+      <section class="q" data-q="heat">
+        <h3>3) ¿Nivel de picante?</h3>
+        <div class="chips" data-type="single">
+          <span class="chip" data-value="no">Nada</span>
+          <span class="chip" data-value="suave">Suave</span>
+          <span class="chip" data-value="alto">🔥 Me encanta</span>
+        </div>
+      </section>
+
+      <!-- Q4 Tocineta & Salsas -->
+      <section class="q" data-q="extras">
+        <h3>4) ¿Te va la tocineta y/o salsas cremosas?</h3>
+        <div class="chips" data-type="multi">
+          <span class="chip" data-value="bacon">Bacon</span>
+          <span class="chip" data-value="cremosa">Salsa cremosa</span>
+          <span class="chip" data-value="cebolla">Cebolla</span>
+          <span class="chip" data-value="queso">Queso extra</span>
+          <span class="chip" data-value="simple">Prefiero simple</span>
+        </div>
+      </section>
+
+      <!-- Q5 Precio -->
+      <section class="q" data-q="budget">
+        <h3>5) ¿Buscas algo más económico o te das el gusto?</h3>
+        <div class="chips" data-type="single">
+          <span class="chip" data-value="ahorro">Ahorro</span>
+          <span class="chip" data-value="medio">Equilibrado</span>
+          <span class="chip" data-value="premium">Premium</span>
+        </div>
+      </section>
+
+      <!-- Q6 Momento -->
+      <section class="q" data-q="moment">
+        <h3>6) ¿Comes solo o para compartir?</h3>
+        <div class="chips" data-type="single">
+          <span class="chip" data-value="solo">Solo</span>
+          <span class="chip" data-value="combo">Con papas/refresco</span>
+          <span class="chip" data-value="para_compartir">Para compartir</span>
+        </div>
+      </section>
+
+      <div class="controls">
+        <button type="button" id="prev" class="ghost" disabled>◀ Atrás</button>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="skip" class="ghost">Saltar</button>
+          <button type="button" id="next">Siguiente ▶</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- RESULTADOS -->
+  <div id="out" class="card" style="display:none;margin-top:12px">
+    <h2>Tu match perfecto</h2>
+    <div class="results" id="results"></div>
+    <div class="controls" style="margin-top:16px">
+      <button id="restart" class="ghost">Reiniciar</button>
+      <button id="compare">Ver Top 3</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  © Gilligan Burgers. Hecho con amor vintage californiano. • Consejo: comparte tu resultado en Stories y etiqueta @gilliganburgers 😎
+</footer>
+
+<script>
+/* ========= 1) MENÚ & REGLAS (EDITABLE) ========= */
+const UTM = "utm_source=ig_bio&utm_medium=link&utm_campaign=burger_finder";
+const UBER_LINK_SDI = "https://www.ubereats.com/XX/placeholder?"+UTM;     // <- PON AQUÍ tus links reales
+const PEDIDOS_LINK_SDI = "https://www.pedidosya.com.do/placeholder?"+UTM;  // <- PON AQUÍ tus links reales
+
+// Define tus productos. Ajusta precios, fotos y etiquetas.
+const menuItems = [
+  {
+    id:"crunchy_bacon",
+    name:"Crunchy Bacon",
+    price:"RD$319 (martes promo)", // puedes mostrar precio regular también
+    photo:"https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80",
+    tags:["res","bacon","cremosa","queso","tamaño_medio","no_picante","best_seller","ahorro_ok"],
+    links:{uber:UBER_LINK_SDI, pedidos:PEDIDOS_LINK_SDI}
+  },
+  {
+    id:"oklahoma_xl",
+    name:"Oklahoma XL",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80",
+    tags:["res","cebolla","queso","tamaño_grande","no_picante","premium_ok"]
+  },
+  {
+    id:"gillibacon_triple",
+    name:"Gillibacon Triple",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1550547660-8b1c1b2f5f9a?w=800&q=80",
+    tags:["res","bacon","queso","tamaño_grande","no_picante","premium_ok"]
+  },
+  {
+    id:"bourbon_xl",
+    name:"Bourbon XL",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&q=80",
+    tags:["res","bacon","cremosa","cebolla","tamaño_grande","suave_picante","premium_ok","nueva"]
+  },
+  {
+    id:"habanero_bacon_jam",
+    name:"Habanero Bacon Jam",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1550317138-10000687a72b?w=800&q=80",
+    tags:["res","bacon","queso","tamaño_medio","alto_picante","premium_ok","nueva"]
+  },
+  {
+    id:"hot_hot_hot",
+    name:"Hot Hot Hot",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1551892374-ecf8754cf8a7?w=800&q=80",
+    tags:["res","alto_picante","cebolla","queso","tamaño_medio","premium_ok","nueva"]
+  },
+  {
+    id:"chicken_sandwich",
+    name:"Chicken Sandwich",
+    price:"RD$ — (2x1 Black Friday – ejemplo)",
+    photo:"https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80",
+    tags:["pollo","cremosa","tamaño_medio","no_picante","ahorro_ok","best_seller"]
+  },
+  {
+    id:"chicken_bites",
+    name:"Chicken Bites (10/20)",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1604908176997-431651b9f21a?w=800&q=80",
+    tags:["pollo","para_compartir","no_picante","ahorro_ok"]
+  },
+  {
+    id:"combo_share",
+    name:"Combo para Compartir",
+    price:"RD$ —",
+    photo:"https://images.unsplash.com/photo-1606756790138-2616eb1627e3?w=800&q=80",
+    tags:["para_compartir","combo","ahorro_ok"]
+  }
+];
+
+// Mapa de cómo las respuestas empujan etiquetas
+const weights = {
+  hunger:{
+    ligero: {tamaño_medio:+1, ahorro_ok:+0.5},
+    medio:  {tamaño_medio:+1},
+    alto:   {tamaño_grande:+1.5, premium_ok:+0.3}
+  },
+  protein:{
+    res:   {res:+1},
+    pollo: {pollo:+1},
+    mixto: {}
+  },
+  heat:{
+    no:    {no_picante:+1},
+    suave: {suave_picante:+1, no_picante:+0.2},
+    alto:  {alto_picante:+1.4}
+  },
+  extras:{
+    bacon:   {bacon:+1},
+    cremosa: {cremosa:+0.9},
+    cebolla: {cebolla:+0.6},
+    queso:   {queso:+0.6},
+    simple:  {bacon:-0.4, cremosa:-0.6, cebolla:-0.4}
+  },
+  budget:{
+    ahorro: {ahorro_ok:+1, premium_ok:-0.6},
+    medio:  {},
+    premium:{premium_ok:+1}
+  },
+  moment:{
+    solo:            {tamaño_medio:+0.4},
+    combo:           {combo:+1},
+    para_compartir:  {para_compartir:+1}
+  }
+};
+
+/* ========= 2) QUIZ UI ========= */
+const $q = [...document.querySelectorAll(".q")];
+const prog = document.getElementById("prog");
+const btnPrev = document.getElementById("prev");
+const btnNext = document.getElementById("next");
+const btnSkip = document.getElementById("skip");
+const out = document.getElementById("out");
+const resEl = document.getElementById("results");
+const btnRestart = document.getElementById("restart");
+const btnCompare = document.getElementById("compare");
+
+let step = 0;
+const state = {hunger:null, protein:null, heat:null, extras:[], budget:null, moment:null};
+
+function updateProgress(){
+  const pct = ((step)/($q.length))*100;
+  prog.style.width = pct+"%";
+  btnPrev.disabled = step===0;
+  btnNext.textContent = step === $q.length-1 ? "Ver resultado ✅" : "Siguiente ▶";
+}
+
+function showStep(i){
+  $q.forEach((s,idx)=>s.classList.toggle("active", idx===i));
+  updateProgress();
+}
+updateProgress();
+
+document.querySelectorAll(".chips").forEach(group=>{
+  const type = group.dataset.type || "single";
+  group.addEventListener("click", (e)=>{
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    if(type==="single"){
+      group.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+      chip.classList.add("on");
+    }else{
+      chip.classList.toggle("on");
+    }
+    saveAnswer(group.closest(".q").dataset.q, group);
+  });
+});
+
+function saveAnswer(key, group){
+  const type = group.querySelector(".chips")?.dataset.type || group.dataset.type;
+  if((group.dataset.type || group.getAttribute("data-type"))==="multi"){
+    const vals = [...group.querySelectorAll(".chip.on")].map(c=>c.dataset.value);
+    state[key] = vals;
+  }else{
+    const sel = group.querySelector(".chip.on");
+    state[key] = sel ? sel.dataset.value : null;
+  }
+}
+
+btnNext.addEventListener("click", ()=>{
+  if(step < $q.length-1){ step++; showStep(step); }
+  else { computeAndRender(); }
+});
+btnPrev.addEventListener("click", ()=>{ if(step>0){ step--; showStep(step); }});
+btnSkip.addEventListener("click", ()=>{ if(step < $q.length-1){ step++; showStep(step);} else { computeAndRender(); }});
+btnRestart.addEventListener("click", ()=>{ location.reload(); });
+btnCompare.addEventListener("click", ()=>{ computeAndRender(true); });
+
+/* ========= 3) SCORING ========= */
+function computeScores(){
+  // base 0
+  const scores = menuItems.map(it=>({id:it.id, item:it, score:0}));
+  // aplicar pesos por respuesta
+  for(const [q, val] of Object.entries(state)){
+    if(!val || (Array.isArray(val) && val.length===0)) continue;
+    const map = weights[q];
+    if(!map) continue;
+
+    if(Array.isArray(val)){
+      val.forEach(v=>{
+        const add = map[v] || {};
+        Object.entries(add).forEach(([tag, w])=>{
+          scores.forEach(s=>{
+            if(s.item.tags.includes(tag)) s.score += w;
+          });
+        });
+      });
+    }else{
+      const add = map[val] || {};
+      Object.entries(add).forEach(([tag, w])=>{
+        scores.forEach(s=>{
+          if(s.item.tags.includes(tag)) s.score += w;
+        });
+      });
+    }
+  }
+
+  // ligerísimo sesgo a “nuevos” si no hay respuestas fuertes
+  const answered = Object.values(state).some(v=> v && (Array.isArray(v)? v.length>0 : true));
+  if(!answered){
+    scores.forEach(s=>{ if(s.item.tags.includes("best_seller")) s.score+=0.2; });
+  }else{
+    scores.forEach(s=>{ if(s.item.tags.includes("nueva")) s.score+=0.15; });
+  }
+
+  // normalización estética
+  const max = Math.max(...scores.map(s=>s.score), 1);
+  scores.forEach(s=> s.norm = Math.round((s.score/max)*100));
+
+  // ordenar
+  scores.sort((a,b)=> b.score - a.score);
+  return scores;
+}
+
+function computeAndRender(showTop3=false){
+  const scores = computeScores();
+  const picks = showTop3 ? scores.slice(0,3) : scores.slice(0,1);
+  renderResults(picks, scores[0]);
+}
+
+function tagToLabel(t){
+  const map = {
+    res:"Res", pollo:"Pollo", bacon:"Bacon", cremosa:"Salsa cremosa", cebolla:"Cebolla",
+    queso:"Queso", tamaño_medio:"Tamaño medio", tamaño_grande:"XL/Grande", no_picante:"No picante",
+    suave_picante:"Picor suave", alto_picante:"Muy picante", combo:"Combo", para_compartir:"Para compartir",
+    ahorro_ok:"Precio amigo", premium_ok:"Premium", best_seller:"Más vendido", nueva:"Nueva"
+  };
+  return map[t] || t;
+}
+
+function buyLinks(item){
+  const u = item.links?.uber || UBER_LINK_SDI;
+  const p = item.links?.pedidos || PEDIDOS_LINK_SDI;
+  return `
+    <a class="pill" href="${u}" target="_blank" rel="noopener">Pedir en UberEats</a>
+    <a class="pill" href="${p}" target="_blank" rel="noopener">Pedir en PedidosYa</a>
+  `;
+}
+
+function renderResults(picks, top){
+  out.style.display = "block";
+  resEl.innerHTML = picks.map(s=>{
+    const it = s.item;
+    const tgs = it.tags.filter(t=>["res","pollo","bacon","cremosa","cebolla","queso","tamaño_medio","tamaño_grande","no_picante","suave_picante","alto_picante","combo","para_compartir","best_seller","nueva","ahorro_ok","premium_ok"].includes(t));
+    return `
+      <div class="item">
+        <img src="${it.photo}" alt="${it.name}">
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div>
+              <div style="font-weight:900;font-size:1.05rem">${it.name}</div>
+              <div class="price">${it.price || ""}</div>
+            </div>
+            <div class="score">Afinidad: <b>${s.norm}%</b></div>
+          </div>
+          <div style="margin:6px 0">${tgs.map(t=>`<span class="tag">${tagToLabel(t)}</span>`).join("")}</div>
+          <div class="cta">${buyLinks(it)}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // scroll a resultados
+  out.scrollIntoView({behavior:"smooth"});
+}
+
+/* ========= 4) ANALÍTICA SENCILLA (opcional sin cookies) ========= */
+(function lightweightAnalytics(){
+  // Solo ejemplo: agrega hash de respuestas en el link para rastreo básico
+  function encodeState(){
+    const o = Object.fromEntries(Object.entries(state).filter(([k,v])=> v && (Array.isArray(v)? v.length: true)));
+    return btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  }
+  const observer = new MutationObserver(()=>{
+    // añadir query ?pref= al CTA
+    document.querySelectorAll(".cta a").forEach(a=>{
+      const url = new URL(a.href);
+      url.searchParams.set("pref", encodeState());
+      a.href = url.toString();
+    });
+  });
+  observer.observe(document.body, {subtree:true, childList:true});
+})();
+</script>
+</body>
+</html>
